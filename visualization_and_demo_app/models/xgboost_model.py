@@ -9,6 +9,7 @@ MODEL_PARAMS = {
         'max_leaves': 16,
         'reg_alpha': 0,
         'reg_lambda': 1,
+        'n_jobs': 1,
         'random_state': 42
     }
 
