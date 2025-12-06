@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import time
 from sklearn.model_selection import train_test_split
 
 # Import your custom models
@@ -26,7 +27,7 @@ def plot_feature_importance_small(model, X, title):
     return fig
 
 def render_training_tab(df, name_to_id, id_to_name):
-    # Prepare Data
+    # --- 1. PREPARE DATA ---
     def rating_group(val):
         if val <= 357: return 1
         elif val <= 410: return 2
@@ -49,26 +50,39 @@ def render_training_tab(df, name_to_id, id_to_name):
         X, y, random_state=104, test_size=0.06, stratify=stratify_base
     )
 
+    # Initialize Session State
+    if 'trained' not in st.session_state:
+        st.session_state['trained'] = False
+
+    # --- 2. TRAINING CONFIGURATION ---
     st.sidebar.header("⚙️ Model Hyperparameters")
     n_estimators = st.sidebar.slider("Number of Estimators", 100, 1000, 500, step=50)
     learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.3, 0.1)
 
-    # --- Training Section ---
+    # --- 3. TRAIN BUTTON WITH PROGRESS BAR ---
     st.subheader("1. Train & Compare Models")
     
-    if 'trained' not in st.session_state:
-        st.session_state['trained'] = False
-
-    if st.button("🚀 Train Both Models"):
-        with st.spinner("Training models..."):
-            # Train XGBoost
+    if st.button("🚀 Train Models"):
+        # Create a progress bar
+        progress_bar = st.progress(0, text="Initializing training...")
+        
+        try:
+            # STEP 1: XGBoost (Update to 10%)
+            progress_bar.progress(10, text=f"Training XGBoost ({n_estimators} estimators)... This may take a while.")
+            
             xgb_wrapper = XgBoostModel(model=None, n_estimators=n_estimators, learning_rate=learning_rate)
             xgb_wrapper.fit(X_train, y_train)
-            xgb_pred = xgb_wrapper.predict(X_test)
             
-            # Train LightGBM
+            # STEP 2: LightGBM (Update to 50%)
+            progress_bar.progress(50, text=f"Training LightGBM ({n_estimators} estimators)...")
+            
             lgb_wrapper = LightGBMModel(model=None, n_estimators=n_estimators, learning_rate=learning_rate)
             lgb_wrapper.fit(X_train, y_train)
+            
+            # STEP 3: Evaluation (Update to 80%)
+            progress_bar.progress(80, text="Evaluating models and calculating metrics...")
+            
+            xgb_pred = xgb_wrapper.predict(X_test)
             lgb_pred = lgb_wrapper.predict(X_test)
             
             # Store results
@@ -81,10 +95,21 @@ def render_training_tab(df, name_to_id, id_to_name):
             st.session_state['y_test'] = y_test
             st.session_state['trained'] = True
             
-            st.success("Training Complete!")
+            # STEP 4: Finish (Update to 100%)
+            progress_bar.progress(100, text="Training Complete!")
+            time.sleep(1) # Show 100% briefly
+            progress_bar.empty() # Hide bar
+            
+            st.success("✅ Models trained successfully!")
 
-    # Display Results
+        except Exception as e:
+            st.error(f"An error occurred during training: {e}")
+            progress_bar.empty()
+
+    # --- 4. RESULTS ---
     if st.session_state['trained']:
+        
+        # --- METRICS ---
         st.markdown("### 📊 Performance Metrics")
         
         metrics_config = [("MAE", "mae", "inverse"), ("MSE", "mse", "inverse"), ("RMSE", "rmse", "inverse"), ("R2 Score", "r2", "normal")]
@@ -109,7 +134,7 @@ def render_training_tab(df, name_to_id, id_to_name):
             st.info("LightGBM Importance")
             st.pyplot(plot_feature_importance_small(st.session_state['lgb_model'].model, X, "LightGBM Features"))
 
-    # --- Prediction Interfaces ---
+    # --- 5. PREDICTION INTERFACES ---
     if st.session_state['trained']:
         st.markdown("---")
         tab_live, tab_test = st.tabs(["🔮 Live Prediction", "🔍 Inspect Test Set"])
@@ -149,19 +174,22 @@ def render_training_tab(df, name_to_id, id_to_name):
 
         # Test Set Inspection
         with tab_test:
-            idx = st.slider("Select Test Index", 0, len(st.session_state['X_test'])-1, 0)
-            row_X = st.session_state['X_test'].iloc[[idx]].copy() 
-            
-            actual = st.session_state['y_test'].iloc[idx]
-            
-            p_xgb = st.session_state['xgb_model'].predict(row_X)[0]
-            p_lgb = st.session_state['lgb_model'].predict(row_X)[0]
-            
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Actual", f"{actual:.2f}")
-            c2.metric("XGBoost", f"{p_xgb:.2f}", delta=f"{p_xgb-actual:.2f}")
-            c3.metric("LightGBM", f"{p_lgb:.2f}", delta=f"{p_lgb-actual:.2f}")
-            
-            if 'country' in row_X.columns and id_to_name:
-                row_X['country_name'] = row_X['country'].map(id_to_name)
-            st.dataframe(row_X)
+            if 'X_test' in st.session_state and len(st.session_state['X_test']) > 0:
+                idx = st.slider("Select Test Index", 0, len(st.session_state['X_test'])-1, 0)
+                
+                row_X = st.session_state['X_test'].iloc[[idx]].copy()
+                actual = st.session_state['y_test'].iloc[idx]
+                
+                p_xgb = st.session_state['xgb_model'].predict(row_X)[0]
+                p_lgb = st.session_state['lgb_model'].predict(row_X)[0]
+                
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Actual", f"{actual:.2f}")
+                c2.metric("XGBoost", f"{p_xgb:.2f}", delta=f"{p_xgb-actual:.2f}")
+                c3.metric("LightGBM", f"{p_lgb:.2f}", delta=f"{p_lgb-actual:.2f}")
+                
+                if 'country' in row_X.columns and id_to_name:
+                    row_X['country_name'] = row_X['country'].map(id_to_name)
+                st.dataframe(row_X)
+            else:
+                st.info("Test set data not available.")
