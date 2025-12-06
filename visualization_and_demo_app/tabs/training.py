@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import pickle
-import os
 from sklearn.model_selection import train_test_split
 
+# Import your custom models
 try:
     from models.lightgbm_model import LightGBMModel
     from models.xgboost_model import XgBoostModel
@@ -27,7 +26,7 @@ def plot_feature_importance_small(model, X, title):
     return fig
 
 def render_training_tab(df, name_to_id, id_to_name):
-    # --- 1. PREPARE DATA ---
+    # Prepare Data
     def rating_group(val):
         if val <= 357: return 1
         elif val <= 410: return 2
@@ -50,57 +49,26 @@ def render_training_tab(df, name_to_id, id_to_name):
         X, y, random_state=104, test_size=0.06, stratify=stratify_base
     )
 
+    st.sidebar.header("⚙️ Model Hyperparameters")
+    n_estimators = st.sidebar.slider("Number of Estimators", 100, 1000, 500, step=50)
+    learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.3, 0.1)
+
+    # --- Training Section ---
+    st.subheader("1. Train & Compare Models")
+    
     if 'trained' not in st.session_state:
         st.session_state['trained'] = False
 
-    st.sidebar.header("⚙️ Model Hyperparameters")
-
-    DEFAULT_N_EST = 500
-    DEFAULT_LR = 0.1
-    
-    n_estimators = st.sidebar.slider("Number of Estimators", 100, 1000, DEFAULT_N_EST, step=50)
-    learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.3, DEFAULT_LR)
-
-    # --- 3. TRAIN / LOAD LOGIC ---
-    st.subheader("1. Train & Compare Models")
-    
-    if st.button("🚀 Train Models"):
-        with st.spinner("Processing..."):
-            xgb_default_path = "./models/default_xgboost.pkl"
-            lgb_default_path = "./models/default_lightgbm.pkl"
-            is_default_settings = (n_estimators == DEFAULT_N_EST) and (learning_rate == DEFAULT_LR)
-            models_loaded = False
-            
-            # OPTION A: TRY LOADING DEFAULTS
-            if is_default_settings:
-                if os.path.exists(xgb_default_path) and os.path.exists(lgb_default_path):
-                    try:
-                        with open(xgb_default_path, 'rb') as f:
-                            xgb_wrapper = pickle.load(f)
-                        with open(lgb_default_path, 'rb') as f:
-                            lgb_wrapper = pickle.load(f)
-                        models_loaded = True
-                    except Exception as e:
-                        st.warning(f"Could not load default models: {e}. Retraining...")
-            
-            # OPTION B: TRAIN NEW (If not loaded)
-            if not models_loaded:
-                xgb_wrapper = XgBoostModel(model=None, n_estimators=n_estimators, learning_rate=learning_rate)
-                xgb_wrapper.fit(X_train, y_train)
-                
-                # Train LightGBM
-                lgb_wrapper = LightGBMModel(model=None, n_estimators=n_estimators, learning_rate=learning_rate)
-                lgb_wrapper.fit(X_train, y_train)
-
-                if is_default_settings:
-                    with open(xgb_default_path, 'wb') as f:
-                        pickle.dump(xgb_wrapper, f)
-                    with open(lgb_default_path, 'wb') as f:
-                        pickle.dump(lgb_wrapper, f)
-                    st.success("✅ Trained and SAVED default models to disk for future use!")
-                else:
-                    st.success("Training Complete!")
+    if st.button("🚀 Train Both Models"):
+        with st.spinner("Training models..."):
+            # Train XGBoost
+            xgb_wrapper = XgBoostModel(model=None, n_estimators=n_estimators, learning_rate=learning_rate)
+            xgb_wrapper.fit(X_train, y_train)
             xgb_pred = xgb_wrapper.predict(X_test)
+            
+            # Train LightGBM
+            lgb_wrapper = LightGBMModel(model=None, n_estimators=n_estimators, learning_rate=learning_rate)
+            lgb_wrapper.fit(X_train, y_train)
             lgb_pred = lgb_wrapper.predict(X_test)
             
             # Store results
@@ -113,12 +81,10 @@ def render_training_tab(df, name_to_id, id_to_name):
             st.session_state['y_test'] = y_test
             st.session_state['trained'] = True
             
-            # No rerun needed here, content updates below naturally
+            st.success("Training Complete!")
 
-    # --- 4. RESULTS ---
+    # Display Results
     if st.session_state['trained']:
-        
-        # --- METRICS ---
         st.markdown("### 📊 Performance Metrics")
         
         metrics_config = [("MAE", "mae", "inverse"), ("MSE", "mse", "inverse"), ("RMSE", "rmse", "inverse"), ("R2 Score", "r2", "normal")]
@@ -143,7 +109,7 @@ def render_training_tab(df, name_to_id, id_to_name):
             st.info("LightGBM Importance")
             st.pyplot(plot_feature_importance_small(st.session_state['lgb_model'].model, X, "LightGBM Features"))
 
-    # --- 5. PREDICTION INTERFACES ---
+    # --- Prediction Interfaces ---
     if st.session_state['trained']:
         st.markdown("---")
         tab_live, tab_test = st.tabs(["🔮 Live Prediction", "🔍 Inspect Test Set"])
@@ -183,22 +149,19 @@ def render_training_tab(df, name_to_id, id_to_name):
 
         # Test Set Inspection
         with tab_test:
-            if 'X_test' in st.session_state and len(st.session_state['X_test']) > 0:
-                idx = st.slider("Select Test Index", 0, len(st.session_state['X_test'])-1, 0)
-                
-                row_X = st.session_state['X_test'].iloc[[idx]].copy()
-                actual = st.session_state['y_test'].iloc[idx]
-                
-                p_xgb = st.session_state['xgb_model'].predict(row_X)[0]
-                p_lgb = st.session_state['lgb_model'].predict(row_X)[0]
-                
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Actual", f"{actual:.2f}")
-                c2.metric("XGBoost", f"{p_xgb:.2f}", delta=f"{p_xgb-actual:.2f}")
-                c3.metric("LightGBM", f"{p_lgb:.2f}", delta=f"{p_lgb-actual:.2f}")
-                
-                if 'country' in row_X.columns and id_to_name:
-                    row_X['country_name'] = row_X['country'].map(id_to_name)
-                st.dataframe(row_X)
-            else:
-                st.info("Test set data not available.")
+            idx = st.slider("Select Test Index", 0, len(st.session_state['X_test'])-1, 0)
+            row_X = st.session_state['X_test'].iloc[[idx]].copy() 
+            
+            actual = st.session_state['y_test'].iloc[idx]
+            
+            p_xgb = st.session_state['xgb_model'].predict(row_X)[0]
+            p_lgb = st.session_state['lgb_model'].predict(row_X)[0]
+            
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Actual", f"{actual:.2f}")
+            c2.metric("XGBoost", f"{p_xgb:.2f}", delta=f"{p_xgb-actual:.2f}")
+            c3.metric("LightGBM", f"{p_lgb:.2f}", delta=f"{p_lgb-actual:.2f}")
+            
+            if 'country' in row_X.columns and id_to_name:
+                row_X['country_name'] = row_X['country'].map(id_to_name)
+            st.dataframe(row_X)
