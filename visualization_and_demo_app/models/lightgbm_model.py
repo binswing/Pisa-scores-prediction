@@ -15,11 +15,11 @@ MODEL_PARAMS = {
     }
 
 class LightGBMModel:
-    def __init__(self, model: Optional[lgb.LGBMRegressor], *args, **kwargs): 
+    def __init__(self, model: Optional[lgb.LGBMRegressor] = None, *args, **kwargs): 
         if model is not None:
             self.model = model
         else:
-            self.model = self.create_model(*args, **kwargs)
+            self.create_model(*args, **kwargs)
 
     def create_model(self, *args, **kwargs):
         self.model_params = MODEL_PARAMS

@@ -14,7 +14,7 @@ st.set_page_config(page_title="PISA ML & Visualization", layout="wide")
 @st.cache_data
 def load_data():
     #sửa cái này theo đường dẫn dataset
-    path = "economics_and_education_dataset_CSV_clean.csv"
+    path = "./dataset/economics_and_education_dataset_CSV.csv"
     return pd.read_csv(path)
 
 df = load_data()

@@ -13,11 +13,11 @@ MODEL_PARAMS = {
     }
 
 class XgBoostModel:
-    def __init__(self, model: Optional[xgb.XGBRegressor], *args, **kwargs): 
+    def __init__(self, model: Optional[xgb.XGBRegressor] = None, *args, **kwargs): 
         if model is not None:
             self.model = model
         else:
-            self.model = self.create_model(*args, **kwargs)
+            self.create_model(*args, **kwargs)
 
     def create_model(self, *args, **kwargs):
         self.model_params = MODEL_PARAMS

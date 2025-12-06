@@ -8,3 +8,6 @@ xgboost
 lightgbm
 graphviz
 streamlit
+plotly
+statsmodels
+streamlit-option-menu
