@@ -66,8 +66,8 @@ def render_training_tab(df, name_to_id, id_to_name):
     
     if st.button("🚀 Train Models"):
         with st.spinner("Processing..."):
-            xgb_default_path = "../models/default_xgboost.pkl"
-            lgb_default_path = "../models/default_lightgbm.pkl"
+            xgb_default_path = "./models/default_xgboost.pkl"
+            lgb_default_path = "./models/default_lightgbm.pkl"
             is_default_settings = (n_estimators == DEFAULT_N_EST) and (learning_rate == DEFAULT_LR)
             models_loaded = False
             
