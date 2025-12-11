@@ -147,10 +147,8 @@ def render_training_tab(df, name_to_id, id_to_name):
         st.markdown("### 📉 Feature Importance")
         col1, col2 = st.columns(2)
         with col1:
-            st.info("XGBoost Importance")
             st.pyplot(plot_feature_importance_small(st.session_state['xgb_model'].model, X, "XGBoost Features"))
         with col2:
-            st.info("LightGBM Importance")
             st.pyplot(plot_feature_importance_small(st.session_state['lgb_model'].model, X, "LightGBM Features"))
 
     # --- 5. PREDICTION INTERFACES ---
