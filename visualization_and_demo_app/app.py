@@ -32,11 +32,11 @@ if df is not None:
     st.sidebar.title("Navigation")
     page = st.sidebar.radio(
         "Select Module:", 
-        ["📊 Data Visualization", "🤖 Model Training"]
+        ["Data Visualization", "Model Training"]
     )
     
     st.sidebar.markdown("---")
-    if page == "📊 Data Visualization":
+    if page == "Data Visualization":
         render_visualization_tab(df, id_to_name)
-    elif page == "🤖 Model Training":
+    elif page == "Model Training":
         render_training_tab(df, name_to_id, id_to_name)

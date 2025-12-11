@@ -60,7 +60,7 @@ def render_training_tab(df, name_to_id, id_to_name):
     learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.3, 0.1)
 
     # --- 3. TRAIN BUTTON WITH PROGRESS BAR ---
-    st.subheader("1. Train & Compare Models")
+    st.subheader("Train & Compare Models: XGBoost vs LightGBM")
     
     if st.button("🚀 Train Models"):
         # Create a progress bar
@@ -112,18 +112,37 @@ def render_training_tab(df, name_to_id, id_to_name):
         # --- METRICS ---
         st.markdown("### 📊 Performance Metrics")
         
-        metrics_config = [("MAE", "mae", "inverse"), ("MSE", "mse", "inverse"), ("RMSE", "rmse", "inverse"), ("R2 Score", "r2", "normal")]
+        metrics_config = [
+            ("MAE", "Mean Absolute Error (Lower is better)", "mae", "inverse"), 
+            ("MSE", "Mean Squared Error (Lower is better)", "mse", "inverse"), 
+            ("RMSE", "Root Mean Squared Error (Lower is better)", "rmse", "inverse"), 
+            ("R2 Score", "R-Squared (Higher is better)", "r2", "normal")
+        ]
         
-        for label, key, color_mode in metrics_config:
+        for label, note, key, color_mode in metrics_config:
             xgb_val = st.session_state['xgb_metrics'][key]
             lgb_val = st.session_state['lgb_metrics'][key]
             diff = lgb_val - xgb_val 
             
-            m1, m2, m3 = st.columns([1, 2, 2])
-            with m1: st.markdown(f"**{label}**")
-            with m2: st.metric(label="XGBoost", value=f"{xgb_val:.4f}")
-            with m3: st.metric(label="LightGBM", value=f"{lgb_val:.4f}", delta=f"{diff:.4f}", delta_color=color_mode)
-            st.divider()
+            # Create a bordered card for each metric
+            with st.container(border=True):
+                c1, c2, c3 = st.columns([2, 1, 1])
+                
+                with c1:
+                    st.markdown(f"#### {label}")
+                    st.caption(f"{note}") # Use caption for the description
+                
+                with c2:
+                    st.metric(label="XGBoost", value=f"{xgb_val:.4f}")
+                
+                with c3:
+                    # Streamlit handles the green/red arrow automatically based on delta
+                    st.metric(
+                        label="LightGBM", 
+                        value=f"{lgb_val:.4f}", 
+                        delta=f"{diff:.4f}", 
+                        delta_color=color_mode
+                    )
 
         st.markdown("### 📉 Feature Importance")
         col1, col2 = st.columns(2)

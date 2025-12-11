@@ -54,7 +54,7 @@ def render_visualization_tab(df, id_to_name):
     k1.metric("Avg Rating (Selection)", f"{avg_rating:.1f}")
     k2.metric("Median GDP", f"${med_gdp:,.0f}")
     k3.metric("Countries Included", count_countries)
-    k4.metric("Data Points", count_records)
+    k4.metric("Records count", count_records)
 
     st.markdown("---")
     
@@ -67,7 +67,7 @@ def render_visualization_tab(df, id_to_name):
     with geo_col1:
         map_metric = st.selectbox(
             "Select Metric to Map:",
-            ['rating', 'gdp_per_capita_ppp', 'expenditure_on_education_pct_gdp'],
+            ['rating', 'gdp_per_capita_ppp', 'expenditure_on_education_pct_gdp','gini_index','mortality_rate_infant','population_density'],
             index=0
         )
 
