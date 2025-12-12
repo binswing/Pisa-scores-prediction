@@ -42,7 +42,7 @@ def render_training_tab(df, name_to_id, id_to_name):
     if 'rating_groups' not in df.columns:
         df['rating_groups'] = df['rating'].apply(rating_group)
         
-    X = df.drop(columns=['rating', 'rating_groups'])
+    X = df.drop(columns=['rating', 'rating_groups','country_name'])
     y = df['rating']
     stratify_base = df['rating_groups']
 
@@ -151,7 +151,7 @@ def render_training_tab(df, name_to_id, id_to_name):
                 for col_name in st.session_state['X_columns']:
                     if col_name in skip_cols: continue
                     with cols[i % 4]:
-                        if col_name == 'country' and name_to_id:
+                        if col_name == 'country_id' and name_to_id:
                             c_name = st.selectbox("Country", list(name_to_id.keys()))
                             input_data[col_name] = name_to_id[c_name]
                         else:
@@ -188,7 +188,7 @@ def render_training_tab(df, name_to_id, id_to_name):
                 c2.metric("XGBoost", f"{p_xgb:.2f}", delta=f"{p_xgb-actual:.2f}")
                 c3.metric("LightGBM", f"{p_lgb:.2f}", delta=f"{p_lgb-actual:.2f}")
                 
-                if 'country' in row_X.columns and id_to_name:
+                if 'country_id' in row_X.columns and id_to_name:
                     row_X['country_name'] = row_X['country'].map(id_to_name)
                 st.dataframe(row_X)
             else:

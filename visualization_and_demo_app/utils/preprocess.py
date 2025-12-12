@@ -43,6 +43,9 @@ def preprocess_original_csv(df):
     else:
         raise ValueError("❌ ORIGINAL CSV missing 'country' column")
 
+    country_encoder = LabelEncoder()
+    df["country_id"] = country_encoder.fit_transform(df["country_name"])
+
     # Drop unused
     drop_cols = ["index_code", "alcohol_consumption_per_capita"]
     df = df.drop(columns=[c for c in drop_cols if c in df.columns], errors="ignore")
