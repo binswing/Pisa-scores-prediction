@@ -8,10 +8,17 @@ def render_visualization_tab(df, id_to_name):
 
     # --- 0. PREPARATION & MAPPING ---
     plot_df = df.copy()
-    if 'country' in plot_df.columns and id_to_name:
-        plot_df['country_name'] = plot_df['country'].map(id_to_name)
-    else:
+    if 'country_name' in plot_df.columns:
+        plot_df['country_name'] = plot_df['country_name'].astype(str)
+
+    # If has "country" column (backup case)
+    elif 'country' in plot_df.columns:
         plot_df['country_name'] = plot_df['country'].astype(str)
+
+    # If no country info → stop
+    else:
+        st.error("❌ No country or country_name column found in data.")
+        return
 
     # --- 1. GLOBAL INTERACTIVE FILTERS ---
     with st.expander("🔎 Filter Data (Affects All Charts)", expanded=True):

@@ -1,42 +1,65 @@
 import streamlit as st
 import pandas as pd
 import os
+
 from tabs.visualization import render_visualization_tab
 from tabs.training import render_training_tab
+from utils.preprocess import preprocess_original_csv   # bạn sẽ tạo file này theo hướng dẫn phía dưới
 
-st.set_page_config(page_title="PISA Analytics", layout="wide", initial_sidebar_state="expanded")
-@st.cache_data
-def load_data():
-    def robust_read_csv(filename):
-        paths = [filename, f"../dataset/{filename}", f"dataset/{filename}"]
-        for p in paths:
-            if os.path.exists(p): return pd.read_csv(p)
-        return None
+st.set_page_config(
+    page_title="PISA Analytics",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-    df_imputed = robust_read_csv("economics_and_education_dataset_CSV_imputed.csv")
-    df_original = robust_read_csv("economics_and_education_dataset_CSV.csv")
-    
-    if df_imputed is None:
-        st.error("❌ Data not found! Please check your dataset folder.")
-        return None, None, None
-    name_to_id, id_to_name = None, None
-    if df_original is not None and 'country' in df_original.columns:
-        countries = sorted(df_original['country'].unique().astype(str))
-        name_to_id = {name: i for i, name in enumerate(countries)}
-        id_to_name = {i: name for i, name in enumerate(countries)}
-        
-    return df_imputed, name_to_id, id_to_name
+# --------------------------------------------------------------------
+# 1. Upload CSV
+# --------------------------------------------------------------------
+st.sidebar.title("📤 Upload Dataset")
+uploaded_file = st.sidebar.file_uploader("Upload your ORIGINAL CSV file", type=["csv"])
 
-df, name_to_id, id_to_name = load_data()
-if df is not None:
+df_imputed = None
+name_to_id, id_to_name = None, None
+
+if uploaded_file:
+    try:
+        df_original = pd.read_csv(uploaded_file)
+
+        # ---------------------
+        # TỰ ĐỘNG LÀM SẠCH FILE
+        # ---------------------
+        df_imputed = preprocess_original_csv(df_original)
+
+        # mapping country
+        if 'country' in df_imputed.columns:
+            countries = sorted(df_imputed['country'].unique().astype(str))
+            name_to_id = {name: i for i, name in enumerate(countries)}
+            id_to_name = {i: name for i, name in enumerate(countries)}
+
+        st.success("✅ File uploaded & cleaned successfully!")
+
+    except Exception as e:
+        st.error(f"❌ Error reading file: {e}")
+
+else:
+    st.info("👉 Please upload an ORIGINAL dataset CSV to get started.")
+
+
+# --------------------------------------------------------------------
+# 2. Navigation (only show when data exists)
+# --------------------------------------------------------------------
+if df_imputed is not None:
+
+    st.sidebar.markdown("---")
     st.sidebar.title("Navigation")
+
     page = st.sidebar.radio(
-        "Select Module:", 
+        "Select Module:",
         ["📊 Data Visualization", "🤖 Model Training"]
     )
-    
-    st.sidebar.markdown("---")
+
     if page == "📊 Data Visualization":
-        render_visualization_tab(df, id_to_name)
+        render_visualization_tab(df_imputed, id_to_name)
+
     elif page == "🤖 Model Training":
-        render_training_tab(df, name_to_id, id_to_name)
+        render_training_tab(df_imputed, name_to_id, id_to_name)
