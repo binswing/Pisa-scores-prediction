@@ -121,11 +121,11 @@ xgbmodel = xgb.XGBRegressor(objective='reg:squarederror',
 xgbmodel.fit(X_train, y_train)
 
 xgb_y_pred = xgbmodel.predict(X_test)
-
+print("XGBoost Regression result")
 eval_metrics(y_test, xgb_y_pred)
+print("-------------------------------------------")
 
-
-"""c##Rating prediction with LightGBM"""
+"""##Rating prediction with LightGBM"""
 
 import lightgbm as lgb
 lgbmodel = lgb.LGBMRegressor(objective='regression',
@@ -137,10 +137,13 @@ lgbmodel = lgb.LGBMRegressor(objective='regression',
                              min_child_samples=10,
                              reg_alpha=0,
                              reg_lambda=1,
+                             verbose=-1,
                              random_state=42)
 
 lgbmodel.fit(X_train, y_train)
 
 lgb_y_pred = lgbmodel.predict(X_test)
+
+print("LightGBM Regression result")
 
 eval_metrics(y_test, lgb_y_pred)
