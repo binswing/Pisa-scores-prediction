@@ -5,7 +5,7 @@
 ![Machine Learning](https://img.shields.io/badge/ML-XGBoost%20%7C%20LightGBM-green)
 
 ## Introduction
-This project is part of the **Data Engineering (CO3127)** course at **Ho Chi Minh City University of Technology (HCMUT)**.
+This project is part of the **Đồ án tổng hợp - hướng kỹ thuật dữ liệu (CO3127)** course at **Ho Chi Minh City University of Technology (HCMUT)**.
 
 The goal of this project is to apply Data Science and Machine Learning techniques to predict the **PISA (Programme for International Student Assessment)** scores of various countries. By analyzing macroeconomic, social, and educational data (such as GDP, Gini index, education expenditure, etc.), we aim to quantify the impact of these factors on the quality of education.
 
